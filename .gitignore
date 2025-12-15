@@ -22,3 +22,5 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 speck_ex-*.tar
 
+/native/speck_ex/target
+/priv/native
