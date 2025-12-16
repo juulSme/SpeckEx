@@ -9,7 +9,7 @@ defmodule SpeckEx.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: """
-      Speck block cipher for Elixir, backed by Rust crate "speck-cipher".
+      Speck block cipher for Elixir, backed by Rust.
       """,
       package: [
         licenses: ["Apache-2.0"],
