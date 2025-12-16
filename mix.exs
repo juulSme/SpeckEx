@@ -4,7 +4,7 @@ defmodule SpeckEx.MixProject do
   def project do
     [
       app: :speck_ex,
-      version: "0.1.0",
+      version: "0.0.0+development",
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
