@@ -9,5 +9,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 cipher = "0.5.0-rc.2"
+ctr = "0.10.0-rc.2"
 rustler = "0.37.1" # Check for latest version
 speck-cipher = "0.1.0-rc.2"

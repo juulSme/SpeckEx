@@ -50,4 +50,29 @@ defmodule SpeckEx.Native do
   def speck128_256_init(_key), do: :erlang.nif_error(:nif_not_loaded)
   def speck128_256_encrypt(_data, _ref), do: :erlang.nif_error(:nif_not_loaded)
   def speck128_256_decrypt(_data, _ref), do: :erlang.nif_error(:nif_not_loaded)
+
+  # CTR mode functions
+  # Speck32/64
+  def speck32_64_ctr_encrypt(_key, _nonce, _data), do: :erlang.nif_error(:nif_not_loaded)
+  def speck32_64_ctr_decrypt(_key, _nonce, _data), do: :erlang.nif_error(:nif_not_loaded)
+
+  # Speck64/96
+  def speck64_96_ctr_encrypt(_key, _nonce, _data), do: :erlang.nif_error(:nif_not_loaded)
+  def speck64_96_ctr_decrypt(_key, _nonce, _data), do: :erlang.nif_error(:nif_not_loaded)
+
+  # Speck64/128
+  def speck64_128_ctr_encrypt(_key, _nonce, _data), do: :erlang.nif_error(:nif_not_loaded)
+  def speck64_128_ctr_decrypt(_key, _nonce, _data), do: :erlang.nif_error(:nif_not_loaded)
+
+  # Speck128/128
+  def speck128_128_ctr_encrypt(_key, _nonce, _data), do: :erlang.nif_error(:nif_not_loaded)
+  def speck128_128_ctr_decrypt(_key, _nonce, _data), do: :erlang.nif_error(:nif_not_loaded)
+
+  # Speck128/192
+  def speck128_192_ctr_encrypt(_key, _nonce, _data), do: :erlang.nif_error(:nif_not_loaded)
+  def speck128_192_ctr_decrypt(_key, _nonce, _data), do: :erlang.nif_error(:nif_not_loaded)
+
+  # Speck128/256
+  def speck128_256_ctr_encrypt(_key, _nonce, _data), do: :erlang.nif_error(:nif_not_loaded)
+  def speck128_256_ctr_decrypt(_key, _nonce, _data), do: :erlang.nif_error(:nif_not_loaded)
 end
