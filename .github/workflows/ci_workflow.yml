@@ -36,6 +36,7 @@ jobs:
           path: |
             deps
             _build
+            priv/native
           key: cache-v4-${{steps.setup-beam.outputs.elixir-version}}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
             cache-v4-${{steps.setup-beam.outputs.elixir-version}}-
