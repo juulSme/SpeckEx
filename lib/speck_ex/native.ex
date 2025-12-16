@@ -1,5 +1,22 @@
 defmodule SpeckEx.Native do
-  use Rustler, otp_app: :speck_ex, crate: "speck_ex"
+  version = Mix.Project.config()[:version]
+
+  use RustlerPrecompiled,
+    otp_app: :speck_ex,
+    crate: "speck_ex",
+    base_url: "https://github.com/juulSme/SpeckEx/releases/download/v#{version}",
+    version: version,
+    targets: [
+      "aarch64-apple-darwin",
+      "aarch64-unknown-linux-gnu",
+      "aarch64-unknown-linux-musl",
+      "arm-unknown-linux-gnueabihf",
+      "riscv64gc-unknown-linux-gnu",
+      "x86_64-pc-windows-gnu",
+      "x86_64-pc-windows-msvc",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl"
+    ]
 
   # Speck32/64
   def speck32_64_init(_key), do: :erlang.nif_error(:nif_not_loaded)

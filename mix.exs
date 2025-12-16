@@ -12,6 +12,17 @@ defmodule SpeckEx.MixProject do
       Speck block cipher for Elixir, backed by Rust.
       """,
       package: [
+        files: [
+          "lib",
+          "native/speck_ex/.cargo",
+          "native/speck_ex/src",
+          "native/speck_ex/Cargo*",
+          "native/speck_ex/Cross.toml",
+          ".formatter.exs",
+          "mix.exs",
+          "*.md",
+          "checksum-*.exs"
+        ],
         licenses: ["Apache-2.0"],
         links: %{github: "https://github.com/juulSme/SpeckEx"},
         source_url: "https://github.com/juulSme/SpeckEx"
@@ -39,7 +50,8 @@ defmodule SpeckEx.MixProject do
     [
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
-      {:rustler, "0.37.1"},
+      {:rustler, "0.37.1", optional: true},
+      {:rustler_precompiled, "~> 0.8"},
       {:ex_doc, "~> 0.36", only: [:dev, :test], runtime: false},
       {:benchmark, github: "juulSme/benchmark_ex", only: [:dev, :test]}
     ]

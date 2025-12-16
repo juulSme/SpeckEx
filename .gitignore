@@ -28,3 +28,6 @@ speck_ex-*.tar
 /.elixir_ls
 /.vscode/*
 !/.vscode/*_example.json
+
+/checksum-*.exs
+/speck_ex-*
