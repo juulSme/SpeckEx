@@ -24,3 +24,7 @@ speck_ex-*.tar
 
 /native/speck_ex/target
 /priv/native
+
+/.elixir_ls
+/.vscode/*
+!/.vscode/*_example.json
