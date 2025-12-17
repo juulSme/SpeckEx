@@ -3,13 +3,12 @@ on:
   release:
     types: [published]
 
-permissions:
-  contents: write
-
 jobs:
   build_nifs:
     name: NIF ${{ matrix.target }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:

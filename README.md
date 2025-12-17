@@ -4,16 +4,14 @@ A high-performance Elixir library for the Speck block cipher, powered by Rust NI
 
 Note that the backing Rust crate is a prerelease version at this time.
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache-blue.svg)](LICENSE.md)
 
 ## Features
 
 - 🚀 **High Performance**: Rust-backed implementation using NIFs for maximum speed
-- 🔐 **Complete Coverage**: All 10 Speck cipher variants supported
+- 🔐 **Complete**: All 10 Speck cipher variants supported
 - 🎯 **Multiple Modes**: Low-level block operations and CTR mode for stream encryption
 - ✅ **Well Tested**: Comprehensive test suite with official test vectors
-- 📚 **Excellent Documentation**: Clear examples and security guidelines
-- 🛡️ **Type Safe**: Compile-time validation of key and block sizes
 
 ## Supported Variants
 
@@ -47,24 +45,26 @@ end
 ### Requirements
 
 - Elixir 1.15 or later
-- Rust toolchain (for compilation)
-- Rustler will automatically compile the Rust NIF during installation
+
+**Precompiled Binaries**: SpeckEx includes precompiled NIFs for most common architectures (Linux, macOS, Windows on x86_64, ARM64, etc.). The Rust toolchain is **not required** for typical installations.
+
+If you're on an unsupported platform, Rustler will automatically compile from source during installation, which requires the Rust toolchain.
 
 ## Quick Start
 
 ### High-Level CTR Mode Encryption
 
 ```elixir
-# Generate a random key and nonce
+# Generate a random key and iv
 key = :crypto.strong_rand_bytes(32)    # 256-bit key
-nonce = :crypto.strong_rand_bytes(16)  # 128-bit nonce
+iv = :crypto.strong_rand_bytes(16)  # 128-bit iv
 
 # Encrypt data
 plaintext = "Hello, World! This is a secret message."
-ciphertext = SpeckEx.encrypt(plaintext, key, nonce)
+ciphertext = SpeckEx.encrypt(plaintext, key, iv)
 
 # Decrypt data
-decrypted = SpeckEx.decrypt(ciphertext, key, nonce)
+decrypted = SpeckEx.decrypt(ciphertext, key, iv)
 # => "Hello, World! This is a secret message."
 ```
 
@@ -73,16 +73,20 @@ decrypted = SpeckEx.decrypt(ciphertext, key, nonce)
 ```elixir
 # Speck128/128 (smaller key)
 key = :crypto.strong_rand_bytes(16)
-nonce = :crypto.strong_rand_bytes(16)
-ciphertext = SpeckEx.encrypt("Secret data", key, nonce, variant: :speck128_128)
+iv = :crypto.strong_rand_bytes(16)
+ciphertext = SpeckEx.encrypt("Secret data", key, iv, variant: :speck128_128)
 
 # Speck64/128 (smaller block size)
 key = :crypto.strong_rand_bytes(16)
-nonce = :crypto.strong_rand_bytes(8)   # 64-bit nonce
-ciphertext = SpeckEx.encrypt("Secret data", key, nonce, variant: :speck64_128)
+iv = :crypto.strong_rand_bytes(8)   # 64-bit iv
+ciphertext = SpeckEx.encrypt("Secret data", key, iv, variant: :speck64_128)
 ```
 
 ### Low-Level Block Operations
+
+These low-level operations apply the cipher to single data blocks.
+These operations can be used to implement different block modes (although that could probably be done in a more performant way in Rust).
+You will probably not want to use these operations directly.
 
 ```elixir
 # Initialize cipher
@@ -101,11 +105,11 @@ decrypted_block = SpeckEx.Block.speck128_128_decrypt!(ciphertext_block, cipher)
 
 ⚠️ **Important Security Notes**:
 
-1. **Never Reuse Nonces**: Each encryption with the same key MUST use a unique nonce. Nonce reuse completely breaks CTR mode security.
+1. **Never Reuse IVs**: Each encryption with the same key MUST use a unique iv. IV reuse completely breaks CTR mode security.
 
-2. **Use Cryptographically Secure Random**: Always use `:crypto.strong_rand_bytes/1` for generating keys and nonces.
+2. **Use Cryptographically Secure Random**: Always use `:crypto.strong_rand_bytes/1` for generating keys and ivs.
 
-3. **Speck Cipher Status**: Speck is an NSA-designed cipher optimized for performance on constrained devices. While no practical attacks are known, it has received less academic scrutiny than AES. Consider your threat model carefully.
+3. **Speck Cipher Status**: Speck is an NSA-designed cipher optimized for performance on constrained devices. While no practical attacks are known, it has received less academic scrutiny than AES. Consider your threat model carefully - the authors themselves recommend AES whenever the available compute resources allow it.
 
 4. **No Authentication**: This library provides encryption only. For authenticated encryption, combine with HMAC or use a higher-level AEAD construction.
 
@@ -115,10 +119,18 @@ decrypted_block = SpeckEx.Block.speck128_128_decrypt!(ciphertext_block, cipher)
 
 SpeckEx leverages Rust NIFs for near-native performance. Speck is designed to be one of the fastest software ciphers, particularly on resource-constrained devices.
 
-Typical benchmarks (AMD64):
-
-- Block operations: ~10-20 cycles per byte
-- CTR mode: Comparable to AES-NI on modern processors
+```
+AES 128/256 block dec:   10_634_359 ops/s
+AES 128/256 block enc:   10_525_979 ops/s
+Speck 64/128 block enc:  10_150_622 ops/s
+Speck 128/256 block enc:  9_726_263 ops/s
+Speck 64/128 block dec:   9_674_401 ops/s
+Speck 128/256 block dec:  9_094_560 ops/s
+Speck 96/144 block enc:   8_703_340 ops/s
+Speck 96/144 block dec:   7_582_202 ops/s
+AES 128/256 CTR enc:        470_193 ops/s
+Speck 128/256 CTR enc:       64_247 ops/s
+```
 
 Run benchmarks with:
 
@@ -128,7 +140,7 @@ mix run benchmark/speck.exs
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE.md) file for details.
 
 ## References
 

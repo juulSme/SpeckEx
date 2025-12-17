@@ -24,31 +24,41 @@ defmodule SpeckEx do
       # Generate a random key
       key = :crypto.strong_rand_bytes(16)
 
-      # Generate a random nonce (should be unique per encryption with the same key)
-      nonce = :crypto.strong_rand_bytes(16)
+      # Generate a random iv (should be unique per encryption with the same key)
+      iv = :crypto.strong_rand_bytes(16)
 
       # Encrypt data
-      ciphertext = SpeckEx.encrypt("Hello, World!", key, nonce)
+      ciphertext = SpeckEx.encrypt("Hello, World!", key, iv)
 
       # Decrypt data
-      plaintext = SpeckEx.decrypt(ciphertext, key, nonce)
+      plaintext = SpeckEx.decrypt(ciphertext, key, iv)
 
       # Use a different variant
       key = :crypto.strong_rand_bytes(32)
-      nonce = :crypto.strong_rand_bytes(16)
-      ciphertext = SpeckEx.encrypt("Hello, World!", key, nonce, variant: :speck128_256)
-      plaintext = SpeckEx.decrypt(ciphertext, key, nonce, variant: :speck128_256)
+      iv = :crypto.strong_rand_bytes(16)
+      ciphertext = SpeckEx.encrypt("Hello, World!", key, iv, variant: :speck128_256)
+      plaintext = SpeckEx.decrypt(ciphertext, key, iv, variant: :speck128_256)
 
   ## Security Notes
 
-  - **Never reuse a nonce with the same key**. Each encryption must use a unique nonce.
-  - Use `:crypto.strong_rand_bytes/1` to generate cryptographically secure random nonces.
-  - The nonce should be the same length as the block size of the variant.
+  - **Never reuse a iv with the same key**. Each encryption must use a unique iv.
+  - Use `:crypto.strong_rand_bytes/1` to generate cryptographically secure random ivs.
+  - The iv should be the same length as the block size of the variant.
   """
-
   alias SpeckEx.{Block, Native}
+  import Native
+
+  @variants Block.variants()
+            |> Enum.filter(fn {_, {block_size, _}} -> block_size in [32, 64, 128] end)
+            |> Map.new()
 
   @default_variant :speck128_256
+
+  @typedoc """
+  Supported Speck variants. Naming: `speck<block_size>_<key_size>`, sizes in bits.
+  """
+  @type variants ::
+          :speck32_64 | :speck64_96 | :speck64_128 | :speck128_128 | :speck128_192 | :speck128_256
 
   @doc """
   Encrypts data using CTR mode.
@@ -56,9 +66,8 @@ defmodule SpeckEx do
   ## Parameters
   - `plaintext` - The data to encrypt (binary of any length)
   - `key` - The encryption key (length must match the variant's key size)
-  - `nonce` - The nonce/IV (length must match the variant's block size)
-  - `opts` - Options keyword list
-    - `:variant` - The Speck variant to use (default: `:speck128_256`)
+  - `iv` - The iv (length must match the variant's block size)
+  - `variant` - The Speck variant to use (default: `:speck128_256`)
 
   ## Returns
   The encrypted ciphertext as a binary.
@@ -66,24 +75,24 @@ defmodule SpeckEx do
   ## Examples
 
       key = :crypto.strong_rand_bytes(16)
-      nonce = :crypto.strong_rand_bytes(16)
-      ciphertext = SpeckEx.encrypt("Hello, World!", key, nonce)
+      iv = :crypto.strong_rand_bytes(16)
+      ciphertext = SpeckEx.encrypt("Hello, World!", key, iv)
   """
-  def encrypt(plaintext, key, nonce, opts \\ [])
-      when is_binary(plaintext) and is_binary(key) and is_binary(nonce) do
-    variant = Keyword.get(opts, :variant, @default_variant)
+  @spec encrypt(binary(), <<_::256>>, <<_::128>>) :: binary()
+  def encrypt(plaintext, key, iv, variant \\ @default_variant)
 
-    {block_size_bits, key_size_bits} = Block.variants() |> Map.fetch!(variant)
-
-    unless bit_size(nonce) == block_size_bits do
-      raise ArgumentError, "nonce must be #{block_size_bits} bits for #{variant}"
+  for {variant, {block_size, key_size}} <- @variants do
+    @spec encrypt(
+            binary(),
+            <<_::unquote(key_size)>>,
+            <<_::unquote(block_size)>>,
+            unquote(variant)
+          ) ::
+            binary()
+    def encrypt(data, key, iv, unquote(variant))
+        when bit_size(iv) == unquote(block_size) and bit_size(key) == unquote(key_size) do
+      unquote(:"speck#{block_size}_#{key_size}_ctr_encrypt")(key, iv, data)
     end
-
-    unless bit_size(key) == key_size_bits do
-      raise ArgumentError, "key must be #{key_size_bits} bits for #{variant}"
-    end
-
-    ctr_encrypt(variant, key, nonce, plaintext)
   end
 
   @doc """
@@ -92,56 +101,39 @@ defmodule SpeckEx do
   ## Parameters
   - `ciphertext` - The data to decrypt (binary of any length)
   - `key` - The encryption key (must be the same key used for encryption)
-  - `nonce` - The nonce/IV (must be the same nonce used for encryption)
-  - `opts` - Options keyword list
-    - `:variant` - The Speck variant to use (default: `:speck128_256`)
+  - `iv` - The iv (must be the same iv used for encryption)
+  - `variant` - The Speck variant to use (default: `:speck128_256`)
 
   ## Returns
   The decrypted plaintext as a binary.
 
   ## Examples
 
-      plaintext = SpeckEx.decrypt(ciphertext, key, nonce)
+      plaintext = SpeckEx.decrypt(ciphertext, key, iv)
   """
-  def decrypt(ciphertext, key, nonce, opts \\ [])
-      when is_binary(ciphertext) and is_binary(key) and is_binary(nonce) do
-    variant = Keyword.get(opts, :variant, @default_variant)
-    {block_size_bits, key_size_bits} = Block.variants() |> Map.fetch!(variant)
+  @spec decrypt(binary(), <<_::256>>, <<_::128>>) :: binary()
+  def decrypt(plaintext, key, iv, variant \\ @default_variant)
 
-    unless bit_size(nonce) == block_size_bits do
-      raise ArgumentError, "nonce must be #{block_size_bits} bits for #{variant}"
-    end
-
-    unless bit_size(key) == key_size_bits do
-      raise ArgumentError, "key must be #{key_size_bits} bits for #{variant}"
-    end
-
-    ctr_decrypt(variant, key, nonce, ciphertext)
-  end
-
-  # Call the appropriate Rust NIF for CTR encryption
-  defp ctr_encrypt(variant, key, nonce, data) do
-    case variant do
-      :speck32_64 -> Native.speck32_64_ctr_encrypt(key, nonce, data)
-      :speck64_96 -> Native.speck64_96_ctr_encrypt(key, nonce, data)
-      :speck64_128 -> Native.speck64_128_ctr_encrypt(key, nonce, data)
-      :speck128_128 -> Native.speck128_128_ctr_encrypt(key, nonce, data)
-      :speck128_192 -> Native.speck128_192_ctr_encrypt(key, nonce, data)
-      :speck128_256 -> Native.speck128_256_ctr_encrypt(key, nonce, data)
-      _ -> raise ArgumentError, "unsupported variant: #{inspect(variant)}"
+  for {variant, {block_size, key_size}} <- @variants do
+    @spec decrypt(
+            binary(),
+            <<_::unquote(key_size)>>,
+            <<_::unquote(block_size)>>,
+            unquote(variant)
+          ) ::
+            binary()
+    def decrypt(data, key, iv, unquote(variant))
+        when bit_size(iv) == unquote(block_size) and bit_size(key) == unquote(key_size) do
+      unquote(:"speck#{block_size}_#{key_size}_ctr_decrypt")(key, iv, data)
     end
   end
 
-  # Call the appropriate Rust NIF for CTR decryption
-  defp ctr_decrypt(variant, key, nonce, data) do
-    case variant do
-      :speck32_64 -> Native.speck32_64_ctr_decrypt(key, nonce, data)
-      :speck64_96 -> Native.speck64_96_ctr_decrypt(key, nonce, data)
-      :speck64_128 -> Native.speck64_128_ctr_decrypt(key, nonce, data)
-      :speck128_128 -> Native.speck128_128_ctr_decrypt(key, nonce, data)
-      :speck128_192 -> Native.speck128_192_ctr_decrypt(key, nonce, data)
-      :speck128_256 -> Native.speck128_256_ctr_decrypt(key, nonce, data)
-      _ -> raise ArgumentError, "unsupported variant: #{inspect(variant)}"
-    end
-  end
+  @doc """
+  Returns a map of all supported Speck variants with their block and key sizes.
+
+  ## Returns
+  A map where keys are variant atoms and values are tuples of {block_size_bits, key_size_bits}.
+  """
+  @spec variants() :: %{variants() => Block.variant_parameters()}
+  def variants, do: @variants
 end

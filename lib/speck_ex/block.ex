@@ -32,19 +32,38 @@ defmodule SpeckEx.Block do
 
   alias SpeckEx.Native
 
-  @variants [
-              speck32_64: {32, 64},
-              speck48_72: {48, 72},
-              speck48_96: {48, 96},
-              speck64_96: {64, 96},
-              speck64_128: {64, 128},
-              speck96_96: {96, 96},
-              speck96_144: {96, 144},
-              speck128_128: {128, 128},
-              speck128_192: {128, 192},
-              speck128_256: {128, 256}
-            ]
-            |> Map.new()
+  @variants %{
+    speck32_64: {32, 64},
+    speck48_72: {48, 72},
+    speck48_96: {48, 96},
+    speck64_96: {64, 96},
+    speck64_128: {64, 128},
+    speck96_96: {96, 96},
+    speck96_144: {96, 144},
+    speck128_128: {128, 128},
+    speck128_192: {128, 192},
+    speck128_256: {128, 256}
+  }
+
+  @typedoc """
+  Supported Speck variants. Naming: `speck<block_size>_<key_size>`, sizes in bits.
+  """
+  @type variants ::
+          :speck32_64
+          | :speck48_72
+          | :speck48_96
+          | :speck64_96
+          | :speck64_128
+          | :speck96_96
+          | :speck96_144
+          | :speck128_128
+          | :speck128_192
+          | :speck128_256
+
+  @typedoc """
+  Parameters for a variant; `{block_size, key_size}` in bits.
+  """
+  @type variant_parameters :: {pos_integer(), pos_integer()}
 
   for {variant, {block_size, key_size}} <- @variants do
     @doc """
@@ -59,6 +78,7 @@ defmodule SpeckEx.Block do
     ## Raises
     `ArgumentError` if the key size is incorrect.
     """
+    @spec unquote(:"#{variant}_init!")(<<_::unquote(key_size)>>) :: reference()
     def unquote(:"#{variant}_init!")(key) when bit_size(key) == unquote(key_size),
       do: Native.unquote(:"#{variant}_init")(key)
 
@@ -75,6 +95,8 @@ defmodule SpeckEx.Block do
     ## Raises
     `ArgumentError` if the block size is incorrect.
     """
+    @spec unquote(:"#{variant}_encrypt!")(<<_::unquote(block_size)>>, reference()) ::
+            <<_::unquote(block_size)>>
     def unquote(:"#{variant}_encrypt!")(data, cipher_ref)
         when bit_size(data) == unquote(block_size),
         do: Native.unquote(:"#{variant}_encrypt")(data, cipher_ref)
@@ -92,6 +114,8 @@ defmodule SpeckEx.Block do
     ## Raises
     `ArgumentError` if the block size is incorrect.
     """
+    @spec unquote(:"#{variant}_decrypt!")(<<_::unquote(block_size)>>, reference()) ::
+            <<_::unquote(block_size)>>
     def unquote(:"#{variant}_decrypt!")(data, cipher_ref)
         when bit_size(data) == unquote(block_size),
         do: Native.unquote(:"#{variant}_decrypt")(data, cipher_ref)
@@ -103,33 +127,6 @@ defmodule SpeckEx.Block do
   ## Returns
   A map where keys are variant atoms and values are tuples of {block_size_bits, key_size_bits}.
   """
+  @spec variants() :: %{variants() => variant_parameters()}
   def variants, do: @variants
-
-  @doc """
-  Returns the block size in bits for a given variant.
-
-  ## Parameters
-  - `variant` - The variant atom (e.g., `:speck128_128`)
-
-  ## Returns
-  The block size in bits, or `nil` if the variant is not supported.
-  """
-  def block_size(variant) when is_atom(variant) do
-    {block_size, _key_size} = Map.fetch!(@variants, variant)
-    block_size
-  end
-
-  @doc """
-  Returns the key size in bits for a given variant.
-
-  ## Parameters
-  - `variant` - The variant atom (e.g., `:speck128_128`)
-
-  ## Returns
-  The key size in bits, or `nil` if the variant is not supported.
-  """
-  def key_size(variant) when is_atom(variant) do
-    {_block_size, key_size} = Map.fetch!(@variants, variant)
-    key_size
-  end
 end
