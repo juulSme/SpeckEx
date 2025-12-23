@@ -8,7 +8,9 @@ name = "speck_ex"
 crate-type = ["cdylib"]
 
 [dependencies]
-cipher = "0.5.0-rc.2"
-ctr = "0.10.0-rc.2"
-rustler = "0.37.1" # Check for latest version
-speck-cipher = "0.1.0-rc.2"
+cipher = "0.4.4"
+ctr = "0.9.2"
+poly1305 = "0.8"
+rustler = "0.37.1"
+speck-cipher = "0.0.1"
+subtle = "2.6"
