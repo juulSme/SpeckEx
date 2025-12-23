@@ -100,10 +100,13 @@ defmodule SpeckEx do
   """
   @type variant_parameters :: {pos_integer(), pos_integer()}
 
+  @typedoc "Options for CTR mode."
   @type ctr_opt :: {:variant, ctr_variant()} | {:nonce, <<_::96>>}
 
-  @type aead_opt :: {:variant, aead_variant()} | {:aad, binary()}
+  @typedoc "Options for AEAD mode."
+  @type aead_opt :: {:variant, aead_variant()} | {:nonce, <<_::96>>} | {:aad, binary()}
 
+  @typedoc "Key for speck128_128, speck128_192 and speck128_256"
   @type key :: <<_::128>> | <<_::192>> | <<_::256>>
 
   # CTR Mode Functions
