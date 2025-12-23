@@ -44,6 +44,8 @@ def deps do
 end
 ```
 
+Documentation can be found on [hexdocs.pm](https://hexdocs.pm/speck_ex/).
+
 ### Precompiled binaries
 
 SpeckEx includes precompiled NIFs for most common architectures (Linux, macOS, Windows on x86_64, ARM64, etc.). The Rust toolchain is **not required** for typical installations.
