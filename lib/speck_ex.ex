@@ -61,7 +61,7 @@ defmodule SpeckEx do
   Which brings us to `m::crypto`. For `:crypto.crypto_one_time_aead/6`, it requires 96-bit nonces for AES-GCM and ChaCha20-Poly1305. This provides a somewhat safe default: users only worry about uniqueness of the input nonce; the library manages the internal counter space.
 
   For CTR modes and plain ChaCha20 via `:crypto.crypto_one_time/5`, however, no such guardrail exists. A full block-sized nonce is required, and it's left to the user to realize that counter space is needed *and how to partition it*.
-  This is further complicated by inconsistency: AES-CTR in OTP treats the entire nonce as a big-endian counter (incrementing the rightmost byte first), while ChaCha20 treats only the first 8 bytes as a little-endian 64-bit counter (incrementing the leftmost byte first). That means the counter space for AES-CTR must *appended* while the counter space for ChaCha20 must be *prepended* to (for example) a 96-bits nonce.
+  This is further complicated by inconsistency: AES-CTR in OTP treats the entire nonce as a big-endian counter (incrementing the rightmost byte first), while ChaCha20 treats only the first 8 bytes as a little-endian 64-bit counter (incrementing the leftmost byte first). That means the counter space for AES-CTR must be *appended* while the counter space for ChaCha20 must be *prepended* to (for example) a 96-bits nonce.
 
   To round off this rather confusing state of affairs, generating the input nonce itself is left to the user, who hopefully uses `:crypto.strong_rand_bytes/1` and is aware of the birthday problem (don't encrypt too much data under the same key with random nonces). Alternatively, users may implement a deterministic counter mechanism, which is notoriously hazardous in distributed systems - exactly the kind Erlang/Elixir deployments are encouraged to be.
 
@@ -198,7 +198,6 @@ defmodule SpeckEx do
     {nonce, ciphertext, tag}
   end
 
-  @compile {:inline, do_aead_enc: 5}
   defp do_aead_enc(plaintext, key, nonce, aad, variant)
        when variant in [:speck128_128, :speck128_192, :speck128_256] do
     AEAD.encrypt(plaintext, key, nonce <> <<0::32>>, aad, variant)
@@ -240,7 +239,6 @@ defmodule SpeckEx do
     do_aead_dec(ciphertext, tag, key, nonce, aad, variant)
   end
 
-  @compile {:inline, do_aead_dec: 6}
   defp do_aead_dec(ciphertext, tag, key, nonce, aad, variant)
        when variant in [:speck128_128, :speck128_192, :speck128_256] do
     AEAD.decrypt(ciphertext, tag, key, nonce <> <<0::32>>, aad, variant)
