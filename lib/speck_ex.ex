@@ -132,19 +132,12 @@ defmodule SpeckEx do
 
       iex> key = :crypto.strong_rand_bytes(32)
       iex> {nonce, ciphertext} = SpeckEx.crypt("Hello, World!", key)
-      iex> byte_size(nonce)
-      12
-      iex> {_nonce, plaintext} = SpeckEx.crypt(ciphertext, key, nonce: nonce)
-      iex> plaintext
-      "Hello, World!"
+      iex> {^nonce, "Hello, World!"} = SpeckEx.crypt(ciphertext, key, nonce: nonce)
 
       iex> key = :crypto.strong_rand_bytes(32)
       iex> nonce = :crypto.strong_rand_bytes(12)
       iex> {^nonce, ciphertext} = SpeckEx.crypt("Hello, World!", key, nonce: nonce, variant: :speck128_256)
-      iex> {^nonce, plaintext} = SpeckEx.crypt(ciphertext, key, nonce: nonce, variant: :speck128_256)
-      iex> plaintext
-      "Hello, World!"
-
+      iex> {^nonce, "Hello, World!"} = SpeckEx.crypt(ciphertext, key, nonce: nonce, variant: :speck128_256)
   """
   @spec crypt(binary, key(), [ctr_opt()]) :: {<<_::96>>, binary}
   def crypt(data, key, opts \\ []) do
@@ -184,10 +177,9 @@ defmodule SpeckEx do
   ## Examples
 
       iex> key = :crypto.strong_rand_bytes(32)
-      iex> {nonce, ciphertext, tag} = SpeckEx.aead_encrypt("Secret", key, aad: "metadata")
+      iex> {nonce, ciphertext, tag} = SpeckEx.aead_encrypt("Hello, World!", key, aad: "metadata")
       iex> byte_size(nonce) == 12 and is_binary(ciphertext) and byte_size(tag) == 16
       true
-
   """
   @spec aead_encrypt(binary, key(), [aead_opt()]) :: {<<_::96>>, binary, <<_::128>>}
   def aead_encrypt(plaintext, key, opts \\ []) do
@@ -226,10 +218,11 @@ defmodule SpeckEx do
   ## Examples
 
       iex> key = :crypto.strong_rand_bytes(32)
-      iex> {nonce, ciphertext, tag} = SpeckEx.aead_encrypt("Secret", key, aad: "metadata")
+      iex> {nonce, ciphertext, tag} = SpeckEx.aead_encrypt("Hello, World!", key, aad: "metadata")
       iex> SpeckEx.aead_decrypt(ciphertext, tag, key, nonce, aad: "metadata")
-      {:ok, "Secret"}
-
+      {:ok, "Hello, World!"}
+      iex> SpeckEx.aead_decrypt(ciphertext, tag, key, nonce, aad: "oh no!")
+      {:error, :authentication_failed}
   """
   @spec aead_decrypt(binary, <<_::128>>, key(), <<_::96>>, [aead_opt()]) ::
           {:ok, binary} | {:error, :authentication_failed}
