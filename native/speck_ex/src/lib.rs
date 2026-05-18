@@ -1,5 +1,4 @@
-use cipher::generic_array::GenericArray;
-use cipher::{BlockDecrypt, BlockEncrypt, KeyInit, KeyIvInit, StreamCipher};
+use cipher::{BlockCipherDecrypt, BlockCipherEncrypt, Block, KeyInit, KeyIvInit, StreamCipher};
 use poly1305::{universal_hash::UniversalHash, Poly1305};
 use rustler::{Binary, Env, Error, OwnedBinary, ResourceArc};
 use speck_cipher::{
@@ -17,26 +16,26 @@ fn init<T: KeyInit>(key: &[u8]) -> Result<SpeckCipher<T>, Error> {
         .map(SpeckCipher)
 }
 
-fn encrypt<'a, T: BlockEncrypt>(
+fn encrypt<'a, T: BlockCipherEncrypt>(
     env: Env<'a>,
     cipher: &SpeckCipher<T>,
     data: Binary,
 ) -> Result<Binary<'a>, Error> {
     let mut owned = OwnedBinary::new(data.len()).ok_or(Error::Atom("allocation_failed"))?;
     owned.as_mut_slice().copy_from_slice(data.as_slice());
-    let block = GenericArray::from_mut_slice(owned.as_mut_slice());
+    let block: &mut Block<T> = owned.as_mut_slice().try_into().map_err(|_| Error::BadArg)?;
     cipher.0.encrypt_block(block);
     Ok(owned.release(env))
 }
 
-fn decrypt<'a, T: BlockDecrypt>(
+fn decrypt<'a, T: BlockCipherDecrypt>(
     env: Env<'a>,
     cipher: &SpeckCipher<T>,
     data: Binary,
 ) -> Result<Binary<'a>, Error> {
     let mut owned = OwnedBinary::new(data.len()).ok_or(Error::Atom("allocation_failed"))?;
     owned.as_mut_slice().copy_from_slice(data.as_slice());
-    let block = GenericArray::from_mut_slice(owned.as_mut_slice());
+    let block: &mut Block<T> = owned.as_mut_slice().try_into().map_err(|_| Error::BadArg)?;
     cipher.0.decrypt_block(block);
     Ok(owned.release(env))
 }
@@ -141,10 +140,7 @@ fn ctr_crypt_std<'a, C>(
 where
     C: KeyIvInit + StreamCipher,
 {
-    let mut ctr = C::new(
-        GenericArray::from_slice(key),
-        GenericArray::from_slice(nonce),
-    );
+    let mut ctr = C::new_from_slices(key, nonce).map_err(|_| Error::BadArg)?;
 
     let mut owned = OwnedBinary::new(data.len()).ok_or(Error::Atom("allocation_failed"))?;
     owned.as_mut_slice().copy_from_slice(data);
@@ -205,10 +201,7 @@ where
     C: KeyIvInit + StreamCipher,
 {
     // Initialize CTR mode
-    let mut ctr = C::new(
-        GenericArray::from_slice(key),
-        GenericArray::from_slice(nonce),
-    );
+    let mut ctr = C::new_from_slices(key, nonce).map_err(|_| Error::BadArg)?;
 
     // Derive Poly1305 key (first 32 bytes of keystream)
     let mut p1305_key = [0u8; 32];
@@ -241,10 +234,7 @@ where
     C: KeyIvInit + StreamCipher,
 {
     // Initialize CTR mode
-    let mut ctr = C::new(
-        GenericArray::from_slice(key),
-        GenericArray::from_slice(nonce),
-    );
+    let mut ctr = C::new_from_slices(key, nonce).map_err(|_| Error::BadArg)?;
 
     // Derive Poly1305 key (first 32 bytes of keystream)
     let mut p1305_key = [0u8; 32];
