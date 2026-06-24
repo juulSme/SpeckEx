@@ -203,3 +203,11 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 - Built with [Rustler](https://github.com/rusterlium/rustler) for Elixir-Rust interoperability
 - Uses the [RustCrypto](https://github.com/RustCrypto) cipher traits and implementations
+
+## Compatibility
+
+Elixir 1.18+ and OTP 27+ are fully supported and tested in CI.
+
+Elixir 1.15–1.17 (with OTP 25+) are supported on a best-effort basis and tested in CI. Issues will be considered but may not be fixed if they require significant workarounds.
+
+Older versions are not supported.
