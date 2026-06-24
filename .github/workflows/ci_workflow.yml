@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       - uses: erlef/setup-beam@v1
         id: setup-beam
         with:
@@ -33,15 +33,15 @@ jobs:
           elixir-version: ${{ matrix.elixir }}
       - name: Cache deps
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             deps
             _build
             priv/native
-          key: cache-v4-${{steps.setup-beam.outputs.elixir-version}}-${{ hashFiles('**/mix.lock') }}
+          key: cache-v6-${{steps.setup-beam.outputs.elixir-version}}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            cache-v4-${{steps.setup-beam.outputs.elixir-version}}-
+            cache-v6-${{steps.setup-beam.outputs.elixir-version}}-
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
