@@ -1,4 +1,4 @@
-use cipher::{BlockCipherDecrypt, BlockCipherEncrypt, Block, KeyInit, KeyIvInit, StreamCipher};
+use cipher::{Block, BlockCipherDecrypt, BlockCipherEncrypt, KeyInit, KeyIvInit, StreamCipher};
 use poly1305::{universal_hash::UniversalHash, Poly1305};
 use rustler::{Binary, Env, Error, OwnedBinary, ResourceArc};
 use speck_cipher::{
@@ -21,7 +21,7 @@ fn encrypt<'a, T: BlockCipherEncrypt>(
     cipher: &SpeckCipher<T>,
     data: Binary,
 ) -> Result<Binary<'a>, Error> {
-    let mut owned = OwnedBinary::new(data.len()).ok_or(Error::Atom("allocation_failed"))?;
+    let mut owned = OwnedBinary::new(data.len());
     owned.as_mut_slice().copy_from_slice(data.as_slice());
     let block: &mut Block<T> = owned.as_mut_slice().try_into().map_err(|_| Error::BadArg)?;
     cipher.0.encrypt_block(block);
@@ -33,7 +33,7 @@ fn decrypt<'a, T: BlockCipherDecrypt>(
     cipher: &SpeckCipher<T>,
     data: Binary,
 ) -> Result<Binary<'a>, Error> {
-    let mut owned = OwnedBinary::new(data.len()).ok_or(Error::Atom("allocation_failed"))?;
+    let mut owned = OwnedBinary::new(data.len());
     owned.as_mut_slice().copy_from_slice(data.as_slice());
     let block: &mut Block<T> = owned.as_mut_slice().try_into().map_err(|_| Error::BadArg)?;
     cipher.0.decrypt_block(block);
@@ -43,6 +43,9 @@ fn decrypt<'a, T: BlockCipherDecrypt>(
 // Macro to generate block cipher NIFs
 macro_rules! impl_speck {
     ($name_init:ident, $name_encrypt:ident, $name_decrypt:ident, $cipher_type:ty) => {
+        #[rustler::resource_impl]
+        impl rustler::Resource for SpeckCipher<$cipher_type> {}
+
         #[rustler::nif]
         fn $name_init(k: Binary) -> Result<ResourceArc<SpeckCipher<$cipher_type>>, Error> {
             Ok(ResourceArc::new(init(k.as_slice())?))
@@ -142,7 +145,7 @@ where
 {
     let mut ctr = C::new_from_slices(key, nonce).map_err(|_| Error::BadArg)?;
 
-    let mut owned = OwnedBinary::new(data.len()).ok_or(Error::Atom("allocation_failed"))?;
+    let mut owned = OwnedBinary::new(data.len());
     owned.as_mut_slice().copy_from_slice(data);
     ctr.apply_keystream(owned.as_mut_slice());
 
@@ -208,15 +211,14 @@ where
     ctr.apply_keystream(&mut p1305_key);
 
     // Encrypt plaintext
-    let mut ciphertext_owned =
-        OwnedBinary::new(plaintext.len()).ok_or(Error::Atom("allocation_failed"))?;
+    let mut ciphertext_owned = OwnedBinary::new(plaintext.len());
     ciphertext_owned.as_mut_slice().copy_from_slice(plaintext);
     ctr.apply_keystream(ciphertext_owned.as_mut_slice());
 
     // Compute MAC
     let tag = compute_poly1305_tag(&p1305_key, aad, ciphertext_owned.as_slice())?;
 
-    let mut tag_owned = OwnedBinary::new(16).ok_or(Error::Atom("allocation_failed"))?;
+    let mut tag_owned = OwnedBinary::new(16);
     tag_owned.as_mut_slice().copy_from_slice(&tag);
 
     Ok((ciphertext_owned.release(env), tag_owned.release(env)))
@@ -250,8 +252,7 @@ where
     }
 
     // Decrypt ciphertext
-    let mut plaintext_owned =
-        OwnedBinary::new(ciphertext.len()).ok_or(Error::Atom("allocation_failed"))?;
+    let mut plaintext_owned = OwnedBinary::new(ciphertext.len());
     plaintext_owned.as_mut_slice().copy_from_slice(ciphertext);
     ctr.apply_keystream(plaintext_owned.as_mut_slice());
 
@@ -331,19 +332,4 @@ impl_speck_poly1305!(
     ctr::Ctr128BE<Speck128_256>
 );
 
-#[allow(non_local_definitions)]
-fn on_load(env: Env, _info: rustler::Term) -> bool {
-    let _ = rustler::resource!(SpeckCipher<Speck32_64>, env);
-    let _ = rustler::resource!(SpeckCipher<Speck48_72>, env);
-    let _ = rustler::resource!(SpeckCipher<Speck48_96>, env);
-    let _ = rustler::resource!(SpeckCipher<Speck64_96>, env);
-    let _ = rustler::resource!(SpeckCipher<Speck64_128>, env);
-    let _ = rustler::resource!(SpeckCipher<Speck96_96>, env);
-    let _ = rustler::resource!(SpeckCipher<Speck96_144>, env);
-    let _ = rustler::resource!(SpeckCipher<Speck128_128>, env);
-    let _ = rustler::resource!(SpeckCipher<Speck128_192>, env);
-    let _ = rustler::resource!(SpeckCipher<Speck128_256>, env);
-    true
-}
-
-rustler::init!("Elixir.SpeckEx.Native", load = on_load);
+rustler::init!("Elixir.SpeckEx.Native");

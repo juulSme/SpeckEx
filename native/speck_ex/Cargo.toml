@@ -1,6 +1,6 @@
 [package]
 name = "speck_ex"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 
 [lib]
@@ -8,9 +8,9 @@ name = "speck_ex"
 crate-type = ["cdylib"]
 
 [dependencies]
-cipher = "0.5.1"
-ctr = "0.10.0"
-poly1305 = "0.9"
-rustler = "0.37.1"
+cipher = "0.5.2"
+ctr = "0.10.1"
+poly1305 = "0.9.1"
+rustler = "0.39.0"
 speck-cipher = "0.1.0"
-subtle = "2.6"
+subtle = "2.6.1"
