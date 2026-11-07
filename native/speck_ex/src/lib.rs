@@ -5,6 +5,7 @@ use speck_cipher::{
     Speck128_128, Speck128_192, Speck128_256, Speck32_64, Speck48_72, Speck48_96, Speck64_128,
     Speck64_96, Speck96_144, Speck96_96,
 };
+use zeroize::Zeroizing;
 
 // Resource wrapper
 struct SpeckCipher<T>(T);
@@ -207,8 +208,8 @@ where
     let mut ctr = C::new_from_slices(key, nonce).map_err(|_| Error::BadArg)?;
 
     // Derive Poly1305 key (first 32 bytes of keystream)
-    let mut p1305_key = [0u8; 32];
-    ctr.apply_keystream(&mut p1305_key);
+    let mut p1305_key = Zeroizing::new([0u8; 32]);
+    ctr.apply_keystream(&mut *p1305_key);
 
     // Encrypt plaintext
     let mut ciphertext_owned = OwnedBinary::new(plaintext.len());
@@ -216,7 +217,8 @@ where
     ctr.apply_keystream(ciphertext_owned.as_mut_slice());
 
     // Compute MAC
-    let tag = compute_poly1305_tag(&p1305_key, aad, ciphertext_owned.as_slice())?;
+    let tag = compute_poly1305_tag(&*p1305_key, aad, ciphertext_owned.as_slice())?;
+    drop(p1305_key);
 
     let mut tag_owned = OwnedBinary::new(16);
     tag_owned.as_mut_slice().copy_from_slice(&tag);
@@ -239,11 +241,12 @@ where
     let mut ctr = C::new_from_slices(key, nonce).map_err(|_| Error::BadArg)?;
 
     // Derive Poly1305 key (first 32 bytes of keystream)
-    let mut p1305_key = [0u8; 32];
-    ctr.apply_keystream(&mut p1305_key);
+    let mut p1305_key = Zeroizing::new([0u8; 32]);
+    ctr.apply_keystream(&mut *p1305_key);
 
     // Verify MAC
-    let expected_tag = compute_poly1305_tag(&p1305_key, aad, ciphertext)?;
+    let expected_tag = compute_poly1305_tag(&*p1305_key, aad, ciphertext)?;
+    drop(p1305_key);
 
     // Constant-time comparison
     use subtle::ConstantTimeEq;

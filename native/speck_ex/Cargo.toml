@@ -9,8 +9,9 @@ crate-type = ["cdylib"]
 
 [dependencies]
 cipher = "0.5.2"
-ctr = "0.10.1"
-poly1305 = "0.9.1"
+ctr = { version = "0.10.1", features = ["zeroize"] }
+poly1305 = { version = "0.9.1", features = ["zeroize"] }
 rustler = "0.39.0"
-speck-cipher = "0.1.0"
+speck-cipher = { version = "0.1.0", features = ["zeroize"] }
 subtle = "2.6.1"
+zeroize = "1"
