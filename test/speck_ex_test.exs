@@ -145,7 +145,7 @@ defmodule SpeckExTest do
       {nonce, ciphertext, tag} = SpeckEx.aead_encrypt(plaintext, key, aad: aad)
 
       # Tamper with ciphertext
-      tampered = :binary.part(ciphertext, 0, byte_size(ciphertext) - 1) <> <<0>>
+      tampered = ciphertext <> <<0>>
 
       assert {:error, :authentication_failed} =
                SpeckEx.aead_decrypt(tampered, tag, key, nonce, aad: aad)

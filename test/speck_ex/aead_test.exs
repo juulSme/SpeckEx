@@ -69,7 +69,7 @@ defmodule SpeckEx.AEADTest do
       {ciphertext, tag} = AEAD.encrypt(plaintext, key, nonce, aad)
 
       # Tamper with ciphertext
-      tampered_ciphertext = :binary.part(ciphertext, 0, byte_size(ciphertext) - 1) <> <<0>>
+      tampered_ciphertext = ciphertext <> <<0>>
 
       assert {:error, :authentication_failed} =
                AEAD.decrypt(tampered_ciphertext, tag, key, nonce, aad)
@@ -84,7 +84,8 @@ defmodule SpeckEx.AEADTest do
       {ciphertext, tag} = AEAD.encrypt(plaintext, key, nonce, aad)
 
       # Tamper with tag
-      tampered_tag = :binary.part(tag, 0, 15) <> <<0>>
+      <<first_byte, rest::binary>> = tag
+      tampered_tag = <<255 - first_byte, rest::binary>>
 
       assert {:error, :authentication_failed} =
                AEAD.decrypt(ciphertext, tampered_tag, key, nonce, aad)

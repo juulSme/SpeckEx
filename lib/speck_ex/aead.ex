@@ -132,7 +132,7 @@ defmodule SpeckEx.AEAD do
       iex> key = :crypto.strong_rand_bytes(32)
       iex> nonce = :crypto.strong_rand_bytes(16)
       iex> {ciphertext, tag} = SpeckEx.AEAD.encrypt("Hello", key, nonce, "aad")
-      iex> tampered = <<0>> <> binary_part(ciphertext, 1, byte_size(ciphertext) - 1)
+      iex> tampered = ciphertext <> <<0>>
       iex> SpeckEx.AEAD.decrypt(tampered, tag, key, nonce, "aad")
       {:error, :authentication_failed}
 
