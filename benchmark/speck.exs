@@ -16,9 +16,9 @@ block128 = :crypto.strong_rand_bytes(16)
 block96 = :crypto.strong_rand_bytes(12)
 block64 = :crypto.strong_rand_bytes(8)
 
-# 1000 blocks
-plaintext = :crypto.strong_rand_bytes(16 * 1000)
 nonce = :crypto.strong_rand_bytes(16)
+data_below_limit = :crypto.strong_rand_bytes(16_383)
+data_at_limit = :crypto.strong_rand_bytes(16_384)
 
 %{
   "Speck 64/128 block enc" => [
@@ -61,14 +61,6 @@ nonce = :crypto.strong_rand_bytes(16)
     fn -> :crypto.crypto_update(blowfish_d, block64) end,
     tasks: tasks
   ],
-  "AES 128/256 CTR 1K blocks enc" => [
-    fn -> :crypto.crypto_one_time(:aes_256_ctr, key256, nonce, plaintext, true) end,
-    tasks: tasks
-  ],
-  "Speck 128/256 CTR 1K blocks enc" => [
-    fn -> SpeckEx.CTR.crypt(plaintext, key256, nonce) end,
-    tasks: tasks
-  ],
   "Speck 128/256 init + block enc" => [
     fn ->
       speck128_256 = key256 |> Block.init(:speck128_256)
@@ -84,12 +76,40 @@ nonce = :crypto.strong_rand_bytes(16)
     fn -> :crypto.crypto_one_time(:blowfish_ecb, key128, block64, true) end,
     tasks: tasks
   ],
-  "AES 128/256 AEAD 1K blocks enc" => [
-    fn -> :crypto.crypto_one_time_aead(:aes_256_gcm, key256, nonce, plaintext, "", true) end,
+  "AES 128/256 CTR enc 16384 bytes" => [
+    fn -> :crypto.crypto_one_time(:aes_256_ctr, key256, nonce, data_at_limit, true) end,
     tasks: tasks
   ],
-  "Speck 128/256 AEAD 1K blocks enc" => [
-    fn -> SpeckEx.AEAD.encrypt(plaintext, key256, nonce, "") end,
+  "Speck 128/256 CTR enc 16383 bytes" => [
+    fn -> SpeckEx.CTR.crypt(data_below_limit, key256, nonce) end,
+    tasks: tasks
+  ],
+  "Speck 128/256 CTR enc 16384 bytes" => [
+    fn -> SpeckEx.CTR.crypt(data_at_limit, key256, nonce) end,
+    tasks: tasks
+  ],
+  "AES 128/256 AEAD enc 16384 bytes" => [
+    fn -> :crypto.crypto_one_time_aead(:aes_256_gcm, key256, nonce, data_at_limit, "", true) end,
+    tasks: tasks
+  ],
+  "Speck 128/256 AEAD enc 16383 bytes" => [
+    fn -> SpeckEx.AEAD.encrypt(data_below_limit, key256, nonce, "") end,
+    tasks: tasks
+  ],
+  "Speck 128/256 AEAD enc 16384 bytes" => [
+    fn -> SpeckEx.AEAD.encrypt(data_at_limit, key256, nonce, "") end,
+    tasks: tasks
+  ],
+  "AES 128/256 AEAD AAD 16384 bytes" => [
+    fn -> :crypto.crypto_one_time_aead(:aes_256_gcm, key256, nonce, "", data_at_limit, true) end,
+    tasks: tasks
+  ],
+  "Speck 128/256 AEAD AAD 16383 bytes" => [
+    fn -> SpeckEx.AEAD.encrypt("", key256, nonce, data_below_limit) end,
+    tasks: tasks
+  ],
+  "Speck 128/256 AEAD AAD 16384 bytes" => [
+    fn -> SpeckEx.AEAD.encrypt("", key256, nonce, data_at_limit) end,
     tasks: tasks
   ]
 }
