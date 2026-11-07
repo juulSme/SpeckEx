@@ -38,7 +38,7 @@ defmodule SpeckEx do
 
   > #### TL;DR {: .info}
   >
-  > Use the main `SpeckEx` module, it securely generates nonces for you and returns them. Don't encrypt more than 64GiB with the same nonce, and cycle the key after 4 billion messages. Avoid the `SpeckEx.CTR`, `SpeckEx.AEAD` and `SpeckEx.Block` modules unless you know what you are doing.
+  > Use the main `SpeckEx` module, it securely generates nonces for you and returns them. Don't encrypt more than 64 GiB with the same nonce, and cycle the key after 4 billion messages. Avoid the `SpeckEx.CTR`, `SpeckEx.AEAD` and `SpeckEx.Block` modules unless you know what you are doing.
 
   Nonce generation is a particularly tricky business, about which `m::crypto` is not particularly helpful or informative.
   The problem: CTR modes, CTR-based modes like AES-GCM, and equivalent streaming ciphers like ChaCha20 and ChaCha20-Poly1305 are all critically vulnerable to nonce reuse, as are Speck CTR and AEAD modes. Nonce reuse leads to complete confidentiality failure, exposing all messages encrypted with the reused nonce.
@@ -82,6 +82,9 @@ defmodule SpeckEx do
   You should be exceedingly careful, you can't use random nonces for the small ciphers and you should be aware of the birthday bounds of your chosen block size (you can only securely encrypt 4 * 2^16 = 256KB with the 32-bits cipher, for example, insofar as a 32-bits cipher is secure in the first place).
   """
   alias SpeckEx.{AEAD, Block, CTR}
+
+  # 64 GiB - 32 bytes
+  @max_aead_bytes 64 * 1024 * 1024 * 1024 - 32
 
   @typedoc """
   Speck variants supported by AEAD mode (128-bit block sizes).
@@ -163,7 +166,7 @@ defmodule SpeckEx do
 
   ## Parameters
 
-  - `plaintext` - The data to encrypt (binary, any length)
+  - `plaintext` - The data to encrypt (binary, at most 64 GiB minus 32 bytes)
   - `key` - The encryption key (size depends on variant)
   - `opts` - Keyword list of options:
     - `:nonce` - The nonce (12 bytes, auto-generated if not provided)
@@ -174,6 +177,8 @@ defmodule SpeckEx do
 
   A tuple `{nonce, ciphertext, tag}`.
 
+  Raises `ArgumentError` if the plaintext exceeds the size limit.
+
   ## Examples
 
       iex> key = :crypto.strong_rand_bytes(32)
@@ -182,13 +187,17 @@ defmodule SpeckEx do
       true
   """
   @spec aead_encrypt(binary, key(), [aead_opt()]) :: {<<_::96>>, binary, <<_::128>>}
-  def aead_encrypt(plaintext, key, opts \\ []) do
+  def aead_encrypt(plaintext, key, opts \\ [])
+
+  def aead_encrypt(plaintext, key, opts) when byte_size(plaintext) <= @max_aead_bytes do
     variant = opts[:variant] || :speck128_256
     nonce = opts[:nonce] || :crypto.strong_rand_bytes(12)
     aad = opts[:aad] || ""
     {ciphertext, tag} = do_aead_enc(plaintext, key, nonce, aad, variant)
     {nonce, ciphertext, tag}
   end
+
+  def aead_encrypt(_, _, _), do: raise(ArgumentError, "message larger than 64 GiB - 32 bytes")
 
   defp do_aead_enc(plaintext, key, nonce, aad, variant)
        when variant in [:speck128_128, :speck128_192, :speck128_256] do
@@ -203,7 +212,7 @@ defmodule SpeckEx do
 
   ## Parameters
 
-  - `ciphertext` - The encrypted data (binary, any length)
+  - `ciphertext` - The encrypted data (binary, at most 64 GiB minus 32 bytes)
   - `tag` - The 16-byte Poly1305 authentication tag
   - `key` - The encryption key (size depends on variant)
   - `nonce` - The 12-byte nonce (must match the one from encryption)
@@ -214,6 +223,8 @@ defmodule SpeckEx do
   ## Returns
 
   `{:ok, plaintext}` or `{:error, :authentication_failed}`.
+
+  Raises `ArgumentError` if the ciphertext exceeds the size limit.
 
   ## Examples
 
@@ -226,11 +237,17 @@ defmodule SpeckEx do
   """
   @spec aead_decrypt(binary, <<_::128>>, key(), <<_::96>>, [aead_opt()]) ::
           {:ok, binary} | {:error, :authentication_failed}
-  def aead_decrypt(ciphertext, tag, key, nonce, opts \\ []) do
+  def aead_decrypt(ciphertext, tag, key, nonce, opts \\ [])
+
+  def aead_decrypt(ciphertext, tag, key, nonce, opts)
+      when byte_size(ciphertext) <= @max_aead_bytes do
     variant = opts[:variant] || :speck128_256
     aad = opts[:aad] || ""
     do_aead_dec(ciphertext, tag, key, nonce, aad, variant)
   end
+
+  def aead_decrypt(_, _, _, _, _),
+    do: raise(ArgumentError, "message larger than 64 GiB - 32 bytes")
 
   defp do_aead_dec(ciphertext, tag, key, nonce, aad, variant)
        when variant in [:speck128_128, :speck128_192, :speck128_256] do
