@@ -104,26 +104,38 @@ defmodule SpeckEx.Native do
   # Speck32/64
   @spec speck32_64_ctr_crypt(<<_::64>>, <<_::32>>, binary()) :: binary()
   def speck32_64_ctr_crypt(_key, _iv, _data), do: :erlang.nif_error(:nif_not_loaded)
+  @spec speck32_64_ctr_crypt_dirty(<<_::64>>, <<_::32>>, binary()) :: binary()
+  def speck32_64_ctr_crypt_dirty(_key, _iv, _data), do: :erlang.nif_error(:nif_not_loaded)
 
   # Speck64/96
   @spec speck64_96_ctr_crypt(<<_::96>>, <<_::64>>, binary()) :: binary()
   def speck64_96_ctr_crypt(_key, _iv, _data), do: :erlang.nif_error(:nif_not_loaded)
+  @spec speck64_96_ctr_crypt_dirty(<<_::96>>, <<_::64>>, binary()) :: binary()
+  def speck64_96_ctr_crypt_dirty(_key, _iv, _data), do: :erlang.nif_error(:nif_not_loaded)
 
   # Speck64/128
   @spec speck64_128_ctr_crypt(<<_::128>>, <<_::64>>, binary()) :: binary()
   def speck64_128_ctr_crypt(_key, _iv, _data), do: :erlang.nif_error(:nif_not_loaded)
+  @spec speck64_128_ctr_crypt_dirty(<<_::128>>, <<_::64>>, binary()) :: binary()
+  def speck64_128_ctr_crypt_dirty(_key, _iv, _data), do: :erlang.nif_error(:nif_not_loaded)
 
   # Speck128/128
   @spec speck128_128_ctr_crypt(<<_::128>>, <<_::128>>, binary()) :: binary()
   def speck128_128_ctr_crypt(_key, _iv, _data), do: :erlang.nif_error(:nif_not_loaded)
+  @spec speck128_128_ctr_crypt_dirty(<<_::128>>, <<_::128>>, binary()) :: binary()
+  def speck128_128_ctr_crypt_dirty(_key, _iv, _data), do: :erlang.nif_error(:nif_not_loaded)
 
   # Speck128/192
   @spec speck128_192_ctr_crypt(<<_::192>>, <<_::128>>, binary()) :: binary()
   def speck128_192_ctr_crypt(_key, _iv, _data), do: :erlang.nif_error(:nif_not_loaded)
+  @spec speck128_192_ctr_crypt_dirty(<<_::192>>, <<_::128>>, binary()) :: binary()
+  def speck128_192_ctr_crypt_dirty(_key, _iv, _data), do: :erlang.nif_error(:nif_not_loaded)
 
   # Speck128/256
   @spec speck128_256_ctr_crypt(<<_::256>>, <<_::128>>, binary()) :: binary()
   def speck128_256_ctr_crypt(_key, _iv, _data), do: :erlang.nif_error(:nif_not_loaded)
+  @spec speck128_256_ctr_crypt_dirty(<<_::256>>, <<_::128>>, binary()) :: binary()
+  def speck128_256_ctr_crypt_dirty(_key, _iv, _data), do: :erlang.nif_error(:nif_not_loaded)
 
   # Poly1305 AEAD functions
   # Speck32/64
@@ -132,9 +144,19 @@ defmodule SpeckEx.Native do
   def speck32_64_poly1305_encrypt(_key, _nonce, _plaintext, _aad),
     do: :erlang.nif_error(:nif_not_loaded)
 
+  @spec speck32_64_poly1305_encrypt_dirty(<<_::64>>, <<_::32>>, binary(), binary()) ::
+          {binary(), <<_::128>>}
+  def speck32_64_poly1305_encrypt_dirty(_key, _nonce, _plaintext, _aad),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   @spec speck32_64_poly1305_decrypt(<<_::64>>, <<_::32>>, binary(), <<_::128>>, binary()) ::
           binary() | :authentication_failed
   def speck32_64_poly1305_decrypt(_key, _nonce, _ciphertext, _tag, _aad),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec speck32_64_poly1305_decrypt_dirty(<<_::64>>, <<_::32>>, binary(), <<_::128>>, binary()) ::
+          binary() | :authentication_failed
+  def speck32_64_poly1305_decrypt_dirty(_key, _nonce, _ciphertext, _tag, _aad),
     do: :erlang.nif_error(:nif_not_loaded)
 
   # Speck64/96
@@ -143,9 +165,19 @@ defmodule SpeckEx.Native do
   def speck64_96_poly1305_encrypt(_key, _nonce, _plaintext, _aad),
     do: :erlang.nif_error(:nif_not_loaded)
 
+  @spec speck64_96_poly1305_encrypt_dirty(<<_::96>>, <<_::64>>, binary(), binary()) ::
+          {binary(), <<_::128>>}
+  def speck64_96_poly1305_encrypt_dirty(_key, _nonce, _plaintext, _aad),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   @spec speck64_96_poly1305_decrypt(<<_::96>>, <<_::64>>, binary(), <<_::128>>, binary()) ::
           binary() | :authentication_failed
   def speck64_96_poly1305_decrypt(_key, _nonce, _ciphertext, _tag, _aad),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec speck64_96_poly1305_decrypt_dirty(<<_::96>>, <<_::64>>, binary(), <<_::128>>, binary()) ::
+          binary() | :authentication_failed
+  def speck64_96_poly1305_decrypt_dirty(_key, _nonce, _ciphertext, _tag, _aad),
     do: :erlang.nif_error(:nif_not_loaded)
 
   # Speck64/128
@@ -154,9 +186,19 @@ defmodule SpeckEx.Native do
   def speck64_128_poly1305_encrypt(_key, _nonce, _plaintext, _aad),
     do: :erlang.nif_error(:nif_not_loaded)
 
+  @spec speck64_128_poly1305_encrypt_dirty(<<_::128>>, <<_::64>>, binary(), binary()) ::
+          {binary(), <<_::128>>}
+  def speck64_128_poly1305_encrypt_dirty(_key, _nonce, _plaintext, _aad),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   @spec speck64_128_poly1305_decrypt(<<_::128>>, <<_::64>>, binary(), <<_::128>>, binary()) ::
           binary() | :authentication_failed
   def speck64_128_poly1305_decrypt(_key, _nonce, _ciphertext, _tag, _aad),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec speck64_128_poly1305_decrypt_dirty(<<_::128>>, <<_::64>>, binary(), <<_::128>>, binary()) ::
+          binary() | :authentication_failed
+  def speck64_128_poly1305_decrypt_dirty(_key, _nonce, _ciphertext, _tag, _aad),
     do: :erlang.nif_error(:nif_not_loaded)
 
   # Speck128/128
@@ -165,9 +207,24 @@ defmodule SpeckEx.Native do
   def speck128_128_poly1305_encrypt(_key, _nonce, _plaintext, _aad),
     do: :erlang.nif_error(:nif_not_loaded)
 
+  @spec speck128_128_poly1305_encrypt_dirty(<<_::128>>, <<_::128>>, binary(), binary()) ::
+          {binary(), <<_::128>>}
+  def speck128_128_poly1305_encrypt_dirty(_key, _nonce, _plaintext, _aad),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   @spec speck128_128_poly1305_decrypt(<<_::128>>, <<_::128>>, binary(), <<_::128>>, binary()) ::
           binary() | :authentication_failed
   def speck128_128_poly1305_decrypt(_key, _nonce, _ciphertext, _tag, _aad),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec speck128_128_poly1305_decrypt_dirty(
+          <<_::128>>,
+          <<_::128>>,
+          binary(),
+          <<_::128>>,
+          binary()
+        ) :: binary() | :authentication_failed
+  def speck128_128_poly1305_decrypt_dirty(_key, _nonce, _ciphertext, _tag, _aad),
     do: :erlang.nif_error(:nif_not_loaded)
 
   # Speck128/192
@@ -176,9 +233,24 @@ defmodule SpeckEx.Native do
   def speck128_192_poly1305_encrypt(_key, _nonce, _plaintext, _aad),
     do: :erlang.nif_error(:nif_not_loaded)
 
+  @spec speck128_192_poly1305_encrypt_dirty(<<_::192>>, <<_::128>>, binary(), binary()) ::
+          {binary(), <<_::128>>}
+  def speck128_192_poly1305_encrypt_dirty(_key, _nonce, _plaintext, _aad),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   @spec speck128_192_poly1305_decrypt(<<_::192>>, <<_::128>>, binary(), <<_::128>>, binary()) ::
           binary() | :authentication_failed
   def speck128_192_poly1305_decrypt(_key, _nonce, _ciphertext, _tag, _aad),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec speck128_192_poly1305_decrypt_dirty(
+          <<_::192>>,
+          <<_::128>>,
+          binary(),
+          <<_::128>>,
+          binary()
+        ) :: binary() | :authentication_failed
+  def speck128_192_poly1305_decrypt_dirty(_key, _nonce, _ciphertext, _tag, _aad),
     do: :erlang.nif_error(:nif_not_loaded)
 
   # Speck128/256
@@ -187,8 +259,23 @@ defmodule SpeckEx.Native do
   def speck128_256_poly1305_encrypt(_key, _nonce, _plaintext, _aad),
     do: :erlang.nif_error(:nif_not_loaded)
 
+  @spec speck128_256_poly1305_encrypt_dirty(<<_::256>>, <<_::128>>, binary(), binary()) ::
+          {binary(), <<_::128>>}
+  def speck128_256_poly1305_encrypt_dirty(_key, _nonce, _plaintext, _aad),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   @spec speck128_256_poly1305_decrypt(<<_::256>>, <<_::128>>, binary(), <<_::128>>, binary()) ::
           binary() | :authentication_failed
   def speck128_256_poly1305_decrypt(_key, _nonce, _ciphertext, _tag, _aad),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec speck128_256_poly1305_decrypt_dirty(
+          <<_::256>>,
+          <<_::128>>,
+          binary(),
+          <<_::128>>,
+          binary()
+        ) :: binary() | :authentication_failed
+  def speck128_256_poly1305_decrypt_dirty(_key, _nonce, _ciphertext, _tag, _aad),
     do: :erlang.nif_error(:nif_not_loaded)
 end

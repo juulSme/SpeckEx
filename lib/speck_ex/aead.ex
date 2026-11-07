@@ -54,6 +54,8 @@ defmodule SpeckEx.AEAD do
 
   alias SpeckEx.Native
 
+  @dirty_threshold 16_384
+
   @typedoc """
   AEAD mode supports Speck variants with 32, 64 and 128-bit block sizes.
   """
@@ -86,6 +88,11 @@ defmodule SpeckEx.AEAD do
   @spec encrypt(binary, binary, binary, binary, variant) :: {binary, binary}
   def encrypt(plaintext, key, nonce, aad, variant \\ :speck128_256)
 
+  def encrypt(plaintext, key, nonce, aad, variant)
+      when byte_size(plaintext) >= @dirty_threshold or byte_size(aad) >= @dirty_threshold do
+    dirty_enc(plaintext, key, nonce, aad, variant)
+  end
+
   def encrypt(plaintext, <<key::binary-32>>, <<nonce::binary-16>>, aad, :speck128_256),
     do: Native.speck128_256_poly1305_encrypt(key, nonce, plaintext, aad)
 
@@ -103,6 +110,25 @@ defmodule SpeckEx.AEAD do
 
   def encrypt(plaintext, <<key::binary-8>>, <<nonce::binary-4>>, aad, :speck32_64),
     do: Native.speck32_64_poly1305_encrypt(key, nonce, plaintext, aad)
+
+  @compile {:inline, dirty_enc: 5}
+  defp dirty_enc(plaintext, <<key::binary-32>>, <<nonce::binary-16>>, aad, :speck128_256),
+    do: Native.speck128_256_poly1305_encrypt_dirty(key, nonce, plaintext, aad)
+
+  defp dirty_enc(plaintext, <<key::binary-24>>, <<nonce::binary-16>>, aad, :speck128_192),
+    do: Native.speck128_192_poly1305_encrypt_dirty(key, nonce, plaintext, aad)
+
+  defp dirty_enc(plaintext, <<key::binary-16>>, <<nonce::binary-16>>, aad, :speck128_128),
+    do: Native.speck128_128_poly1305_encrypt_dirty(key, nonce, plaintext, aad)
+
+  defp dirty_enc(plaintext, <<key::binary-16>>, <<nonce::binary-8>>, aad, :speck64_128),
+    do: Native.speck64_128_poly1305_encrypt_dirty(key, nonce, plaintext, aad)
+
+  defp dirty_enc(plaintext, <<key::binary-12>>, <<nonce::binary-8>>, aad, :speck64_96),
+    do: Native.speck64_96_poly1305_encrypt_dirty(key, nonce, plaintext, aad)
+
+  defp dirty_enc(plaintext, <<key::binary-8>>, <<nonce::binary-4>>, aad, :speck32_64),
+    do: Native.speck32_64_poly1305_encrypt_dirty(key, nonce, plaintext, aad)
 
   @doc """
   Verifies the authentication tag and decrypts the ciphertext.
@@ -143,6 +169,11 @@ defmodule SpeckEx.AEAD do
 
   def decrypt(_, tag, _, _, _, _) when bit_size(tag) != 128, do: {:error, :authentication_failed}
 
+  def decrypt(ciphertext, tag, key, nonce, aad, variant)
+      when byte_size(ciphertext) >= @dirty_threshold or byte_size(aad) >= @dirty_threshold do
+    dirty_dec(ciphertext, tag, key, nonce, aad, variant)
+  end
+
   def decrypt(ciphertext, tag, <<key::binary-32>>, <<nonce::binary-16>>, aad, :speck128_256),
     do: Native.speck128_256_poly1305_decrypt(key, nonce, ciphertext, tag, aad) |> dec_result()
 
@@ -160,6 +191,31 @@ defmodule SpeckEx.AEAD do
 
   def decrypt(ciphertext, tag, <<key::binary-8>>, <<nonce::binary-4>>, aad, :speck32_64),
     do: Native.speck32_64_poly1305_decrypt(key, nonce, ciphertext, tag, aad) |> dec_result()
+
+  @compile {:inline, dirty_dec: 6}
+  defp dirty_dec(ciphertext, tag, <<key::binary-32>>, <<nonce::binary-16>>, aad, :speck128_256) do
+    Native.speck128_256_poly1305_decrypt_dirty(key, nonce, ciphertext, tag, aad) |> dec_result()
+  end
+
+  defp dirty_dec(ciphertext, tag, <<key::binary-24>>, <<nonce::binary-16>>, aad, :speck128_192) do
+    Native.speck128_192_poly1305_decrypt_dirty(key, nonce, ciphertext, tag, aad) |> dec_result()
+  end
+
+  defp dirty_dec(ciphertext, tag, <<key::binary-16>>, <<nonce::binary-16>>, aad, :speck128_128) do
+    Native.speck128_128_poly1305_decrypt_dirty(key, nonce, ciphertext, tag, aad) |> dec_result()
+  end
+
+  defp dirty_dec(ciphertext, tag, <<key::binary-16>>, <<nonce::binary-8>>, aad, :speck64_128) do
+    Native.speck64_128_poly1305_decrypt_dirty(key, nonce, ciphertext, tag, aad) |> dec_result()
+  end
+
+  defp dirty_dec(ciphertext, tag, <<key::binary-12>>, <<nonce::binary-8>>, aad, :speck64_96) do
+    Native.speck64_96_poly1305_decrypt_dirty(key, nonce, ciphertext, tag, aad) |> dec_result()
+  end
+
+  defp dirty_dec(ciphertext, tag, <<key::binary-8>>, <<nonce::binary-4>>, aad, :speck32_64) do
+    Native.speck32_64_poly1305_decrypt_dirty(key, nonce, ciphertext, tag, aad) |> dec_result()
+  end
 
   defp dec_result(:authentication_failed), do: {:error, :authentication_failed}
   defp dec_result(plaintext), do: {:ok, plaintext}

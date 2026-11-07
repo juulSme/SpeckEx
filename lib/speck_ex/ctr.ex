@@ -33,6 +33,8 @@ defmodule SpeckEx.CTR do
 
   alias SpeckEx.Native
 
+  @dirty_threshold 16_384
+
   @typedoc """
   Speck variants with 32, 64 and 128-bit block sizes, supported by CTR and AEAD modes.
   """
@@ -65,6 +67,10 @@ defmodule SpeckEx.CTR do
   @spec crypt(binary, binary, binary, variant) :: binary
   def crypt(data, key, nonce, variant \\ :speck128_256)
 
+  def crypt(data, key, nonce, variant) when byte_size(data) >= @dirty_threshold do
+    dirty_crypt(data, key, nonce, variant)
+  end
+
   def crypt(data, <<key::binary-32>>, <<nonce::binary-16>>, :speck128_256),
     do: Native.speck128_256_ctr_crypt(key, nonce, data)
 
@@ -82,4 +88,23 @@ defmodule SpeckEx.CTR do
 
   def crypt(data, <<key::binary-8>>, <<nonce::binary-4>>, :speck32_64),
     do: Native.speck32_64_ctr_crypt(key, nonce, data)
+
+  @compile {:inline, dirty_crypt: 4}
+  defp dirty_crypt(data, <<key::binary-32>>, <<nonce::binary-16>>, :speck128_256),
+    do: Native.speck128_256_ctr_crypt_dirty(key, nonce, data)
+
+  defp dirty_crypt(data, <<key::binary-24>>, <<nonce::binary-16>>, :speck128_192),
+    do: Native.speck128_192_ctr_crypt_dirty(key, nonce, data)
+
+  defp dirty_crypt(data, <<key::binary-16>>, <<nonce::binary-16>>, :speck128_128),
+    do: Native.speck128_128_ctr_crypt_dirty(key, nonce, data)
+
+  defp dirty_crypt(data, <<key::binary-16>>, <<nonce::binary-8>>, :speck64_128),
+    do: Native.speck64_128_ctr_crypt_dirty(key, nonce, data)
+
+  defp dirty_crypt(data, <<key::binary-12>>, <<nonce::binary-8>>, :speck64_96),
+    do: Native.speck64_96_ctr_crypt_dirty(key, nonce, data)
+
+  defp dirty_crypt(data, <<key::binary-8>>, <<nonce::binary-4>>, :speck32_64),
+    do: Native.speck32_64_ctr_crypt_dirty(key, nonce, data)
 end

@@ -155,8 +155,8 @@ where
 
 // Macro to generate CTR mode NIFs using the ctr crate
 macro_rules! impl_speck_ctr {
-    ($name_crypt:ident, $ctr_type:ty) => {
-        #[rustler::nif]
+    ($name_crypt:ident, $ctr_type:ty, $schedule:literal) => {
+        #[rustler::nif(schedule = $schedule)]
         fn $name_crypt<'a>(
             env: Env<'a>,
             key: Binary,
@@ -169,12 +169,54 @@ macro_rules! impl_speck_ctr {
 }
 
 // Generate CTR mode NIFs - only for standard block sizes (32, 64, 128 bits)
-impl_speck_ctr!(speck32_64_ctr_crypt, ctr::Ctr32BE<Speck32_64>);
-impl_speck_ctr!(speck64_96_ctr_crypt, ctr::Ctr64BE<Speck64_96>);
-impl_speck_ctr!(speck64_128_ctr_crypt, ctr::Ctr64BE<Speck64_128>);
-impl_speck_ctr!(speck128_128_ctr_crypt, ctr::Ctr128BE<Speck128_128>);
-impl_speck_ctr!(speck128_192_ctr_crypt, ctr::Ctr128BE<Speck128_192>);
-impl_speck_ctr!(speck128_256_ctr_crypt, ctr::Ctr128BE<Speck128_256>);
+impl_speck_ctr!(speck32_64_ctr_crypt, ctr::Ctr32BE<Speck32_64>, "Normal");
+impl_speck_ctr!(
+    speck32_64_ctr_crypt_dirty,
+    ctr::Ctr32BE<Speck32_64>,
+    "DirtyCpu"
+);
+impl_speck_ctr!(speck64_96_ctr_crypt, ctr::Ctr64BE<Speck64_96>, "Normal");
+impl_speck_ctr!(
+    speck64_96_ctr_crypt_dirty,
+    ctr::Ctr64BE<Speck64_96>,
+    "DirtyCpu"
+);
+impl_speck_ctr!(speck64_128_ctr_crypt, ctr::Ctr64BE<Speck64_128>, "Normal");
+impl_speck_ctr!(
+    speck64_128_ctr_crypt_dirty,
+    ctr::Ctr64BE<Speck64_128>,
+    "DirtyCpu"
+);
+impl_speck_ctr!(
+    speck128_128_ctr_crypt,
+    ctr::Ctr128BE<Speck128_128>,
+    "Normal"
+);
+impl_speck_ctr!(
+    speck128_128_ctr_crypt_dirty,
+    ctr::Ctr128BE<Speck128_128>,
+    "DirtyCpu"
+);
+impl_speck_ctr!(
+    speck128_192_ctr_crypt,
+    ctr::Ctr128BE<Speck128_192>,
+    "Normal"
+);
+impl_speck_ctr!(
+    speck128_192_ctr_crypt_dirty,
+    ctr::Ctr128BE<Speck128_192>,
+    "DirtyCpu"
+);
+impl_speck_ctr!(
+    speck128_256_ctr_crypt,
+    ctr::Ctr128BE<Speck128_256>,
+    "Normal"
+);
+impl_speck_ctr!(
+    speck128_256_ctr_crypt_dirty,
+    ctr::Ctr128BE<Speck128_256>,
+    "DirtyCpu"
+);
 
 // Poly1305 AEAD helper functions
 fn compute_poly1305_tag(poly_key: &[u8], aad: &[u8], ciphertext: &[u8]) -> Result<[u8; 16], Error> {
@@ -264,8 +306,8 @@ where
 
 // Macro to generate Poly1305 AEAD NIFs
 macro_rules! impl_speck_poly1305 {
-    ($name_encrypt:ident, $name_decrypt:ident, $ctr_type:ty) => {
-        #[rustler::nif]
+    ($name_encrypt:ident, $name_decrypt:ident, $ctr_type:ty, $schedule:literal) => {
+        #[rustler::nif(schedule = $schedule)]
         fn $name_encrypt<'a>(
             env: Env<'a>,
             key: Binary,
@@ -282,7 +324,7 @@ macro_rules! impl_speck_poly1305 {
             )
         }
 
-        #[rustler::nif]
+        #[rustler::nif(schedule = $schedule)]
         fn $name_decrypt<'a>(
             env: Env<'a>,
             key: Binary,
@@ -307,32 +349,74 @@ macro_rules! impl_speck_poly1305 {
 impl_speck_poly1305!(
     speck32_64_poly1305_encrypt,
     speck32_64_poly1305_decrypt,
-    ctr::Ctr32BE<Speck32_64>
+    ctr::Ctr32BE<Speck32_64>,
+    "Normal"
+);
+impl_speck_poly1305!(
+    speck32_64_poly1305_encrypt_dirty,
+    speck32_64_poly1305_decrypt_dirty,
+    ctr::Ctr32BE<Speck32_64>,
+    "DirtyCpu"
 );
 impl_speck_poly1305!(
     speck64_96_poly1305_encrypt,
     speck64_96_poly1305_decrypt,
-    ctr::Ctr64BE<Speck64_96>
+    ctr::Ctr64BE<Speck64_96>,
+    "Normal"
+);
+impl_speck_poly1305!(
+    speck64_96_poly1305_encrypt_dirty,
+    speck64_96_poly1305_decrypt_dirty,
+    ctr::Ctr64BE<Speck64_96>,
+    "DirtyCpu"
 );
 impl_speck_poly1305!(
     speck64_128_poly1305_encrypt,
     speck64_128_poly1305_decrypt,
-    ctr::Ctr64BE<Speck64_128>
+    ctr::Ctr64BE<Speck64_128>,
+    "Normal"
+);
+impl_speck_poly1305!(
+    speck64_128_poly1305_encrypt_dirty,
+    speck64_128_poly1305_decrypt_dirty,
+    ctr::Ctr64BE<Speck64_128>,
+    "DirtyCpu"
 );
 impl_speck_poly1305!(
     speck128_128_poly1305_encrypt,
     speck128_128_poly1305_decrypt,
-    ctr::Ctr128BE<Speck128_128>
+    ctr::Ctr128BE<Speck128_128>,
+    "Normal"
+);
+impl_speck_poly1305!(
+    speck128_128_poly1305_encrypt_dirty,
+    speck128_128_poly1305_decrypt_dirty,
+    ctr::Ctr128BE<Speck128_128>,
+    "DirtyCpu"
 );
 impl_speck_poly1305!(
     speck128_192_poly1305_encrypt,
     speck128_192_poly1305_decrypt,
-    ctr::Ctr128BE<Speck128_192>
+    ctr::Ctr128BE<Speck128_192>,
+    "Normal"
+);
+impl_speck_poly1305!(
+    speck128_192_poly1305_encrypt_dirty,
+    speck128_192_poly1305_decrypt_dirty,
+    ctr::Ctr128BE<Speck128_192>,
+    "DirtyCpu"
 );
 impl_speck_poly1305!(
     speck128_256_poly1305_encrypt,
     speck128_256_poly1305_decrypt,
-    ctr::Ctr128BE<Speck128_256>
+    ctr::Ctr128BE<Speck128_256>,
+    "Normal"
+);
+impl_speck_poly1305!(
+    speck128_256_poly1305_encrypt_dirty,
+    speck128_256_poly1305_decrypt_dirty,
+    ctr::Ctr128BE<Speck128_256>,
+    "DirtyCpu"
 );
 
 rustler::init!("Elixir.SpeckEx.Native");

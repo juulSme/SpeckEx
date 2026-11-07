@@ -41,6 +41,15 @@ defmodule SpeckEx.CTRTest do
       assert ^plaintext = CTR.crypt(ciphertext, key, nonce)
     end
 
+    test "round-trips a megabyte" do
+      key = :crypto.strong_rand_bytes(32)
+      nonce = :crypto.strong_rand_bytes(16)
+      plaintext = :binary.copy(<<42>>, 1_048_576)
+
+      ciphertext = CTR.crypt(plaintext, key, nonce)
+      assert ^plaintext = CTR.crypt(ciphertext, key, nonce)
+    end
+
     test "encryption is deterministic with same key and nonce" do
       key = :crypto.strong_rand_bytes(32)
       nonce = :crypto.strong_rand_bytes(16)
@@ -88,6 +97,26 @@ defmodule SpeckEx.CTRTest do
   end
 
   describe "all supported variants" do
+    test "round-trips small and large messages" do
+      variants = [
+        {:speck32_64, 8, 4},
+        {:speck64_96, 12, 8},
+        {:speck64_128, 16, 8},
+        {:speck128_128, 16, 16},
+        {:speck128_192, 24, 16},
+        {:speck128_256, 32, 16}
+      ]
+
+      for {variant, key_size, nonce_size} <- variants, size <- [16_383, 16_384, 16_385] do
+        key = :crypto.strong_rand_bytes(key_size)
+        nonce = :crypto.strong_rand_bytes(nonce_size)
+        plaintext = :binary.copy(<<42>>, size)
+        ciphertext = CTR.crypt(plaintext, key, nonce, variant)
+
+        assert ^plaintext = CTR.crypt(ciphertext, key, nonce, variant)
+      end
+    end
+
     test "speck32_64 variant" do
       key = :crypto.strong_rand_bytes(8)
       nonce = :crypto.strong_rand_bytes(4)

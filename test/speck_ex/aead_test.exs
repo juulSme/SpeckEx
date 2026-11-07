@@ -57,6 +57,20 @@ defmodule SpeckEx.AEADTest do
       assert byte_size(ciphertext) == 10_000
       assert {:ok, ^plaintext} = AEAD.decrypt(ciphertext, tag, key, nonce, aad)
     end
+
+    test "round-trips a megabyte with large associated data" do
+      key = :crypto.strong_rand_bytes(32)
+      nonce = :crypto.strong_rand_bytes(16)
+      plaintext = :binary.copy(<<42>>, 1_048_576)
+      aad = :binary.copy(<<7>>, 1_048_576)
+
+      {ciphertext, tag} = AEAD.encrypt(plaintext, key, nonce, aad)
+
+      assert {:ok, ^plaintext} = AEAD.decrypt(ciphertext, tag, key, nonce, aad)
+
+      assert {:error, :authentication_failed} =
+               AEAD.decrypt(ciphertext, tag, key, nonce, aad <> <<0>>)
+    end
   end
 
   describe "authentication failures" do
@@ -145,6 +159,31 @@ defmodule SpeckEx.AEADTest do
   end
 
   describe "all supported variants" do
+    test "round-trips small and large messages and associated data" do
+      variants = [
+        {:speck32_64, 8, 4},
+        {:speck64_96, 12, 8},
+        {:speck64_128, 16, 8},
+        {:speck128_128, 16, 16},
+        {:speck128_192, 24, 16},
+        {:speck128_256, 32, 16}
+      ]
+
+      for {variant, key_size, nonce_size} <- variants,
+          {message_size, aad_size} <- [{16_383, 0}, {16_384, 0}, {0, 16_384}, {8_192, 8_192}] do
+        key = :crypto.strong_rand_bytes(key_size)
+        nonce = :crypto.strong_rand_bytes(nonce_size)
+        plaintext = :binary.copy(<<42>>, message_size)
+        aad = :binary.copy(<<7>>, aad_size)
+        {ciphertext, tag} = AEAD.encrypt(plaintext, key, nonce, aad, variant)
+
+        assert {:ok, ^plaintext} = AEAD.decrypt(ciphertext, tag, key, nonce, aad, variant)
+
+        assert {:error, :authentication_failed} =
+                 AEAD.decrypt(ciphertext, tag, key, nonce, aad <> <<0>>, variant)
+      end
+    end
+
     test "speck32_64 variant" do
       key = :crypto.strong_rand_bytes(8)
       nonce = :crypto.strong_rand_bytes(4)
