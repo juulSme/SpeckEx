@@ -164,6 +164,48 @@ defmodule SpeckEx.BlockTest do
   end
 
   describe "deterministic encryption" do
+    test "live cipher resources remain usable after other resources are released" do
+      variants = [
+        {:speck32_64, 8, 4},
+        {:speck48_72, 9, 6},
+        {:speck48_96, 12, 6},
+        {:speck64_96, 12, 8},
+        {:speck64_128, 16, 8},
+        {:speck96_96, 12, 12},
+        {:speck96_144, 18, 12},
+        {:speck128_128, 16, 16},
+        {:speck128_192, 24, 16},
+        {:speck128_256, 32, 16}
+      ]
+
+      for {variant, key_size, block_size} <- variants do
+        key = :binary.copy(<<1>>, key_size)
+        plaintext = :binary.copy(<<3>>, block_size)
+        cipher = SpeckEx.Block.init(key, variant)
+        ciphertext = SpeckEx.Block.encrypt(plaintext, cipher, variant)
+        parent = self()
+
+        {pid, monitor} =
+          spawn_monitor(fn ->
+            other_cipher = SpeckEx.Block.init(:binary.copy(<<2>>, key_size), variant)
+
+            send(
+              parent,
+              {:other_ciphertext, SpeckEx.Block.encrypt(plaintext, other_cipher, variant)}
+            )
+          end)
+
+        assert_receive {:other_ciphertext, other_ciphertext}
+        assert_receive {:DOWN, ^monitor, :process, ^pid, :normal}
+        assert ciphertext != other_ciphertext
+
+        :erlang.garbage_collect()
+        assert ciphertext == SpeckEx.Block.encrypt(plaintext, cipher, variant)
+        assert plaintext == SpeckEx.Block.decrypt(ciphertext, cipher, variant)
+        assert key == :binary.copy(<<1>>, key_size)
+      end
+    end
+
     test "same input produces same output with same key" do
       key = <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>>
       plaintext = <<0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15>>

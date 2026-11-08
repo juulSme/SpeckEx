@@ -97,6 +97,33 @@ defmodule SpeckEx.CTRTest do
   end
 
   describe "all supported variants" do
+    test "keystream matches block encryption of successive counters" do
+      variants = [
+        {:speck32_64, 8, 4},
+        {:speck64_96, 12, 8},
+        {:speck64_128, 16, 8},
+        {:speck128_128, 16, 16},
+        {:speck128_192, 24, 16},
+        {:speck128_256, 32, 16}
+      ]
+
+      for {variant, key_size, block_size} <- variants, size <- [37, 16_385] do
+        key = :binary.copy(<<1>>, key_size)
+        nonce = <<254::unsigned-big-integer-size(block_size * 8)>>
+        cipher = SpeckEx.Block.init(key, variant)
+        block_count = div(size + block_size - 1, block_size)
+
+        expected =
+          for index <- 0..(block_count - 1), into: <<>> do
+            counter = <<254 + index::unsigned-big-integer-size(block_size * 8)>>
+            SpeckEx.Block.encrypt(counter, cipher, variant)
+          end
+
+        assert CTR.crypt(:binary.copy(<<0>>, size), key, nonce, variant) ==
+                 binary_part(expected, 0, size)
+      end
+    end
+
     test "round-trips small and large messages" do
       variants = [
         {:speck32_64, 8, 4},

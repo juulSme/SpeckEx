@@ -341,11 +341,85 @@ defmodule SpeckEx.AEADTest do
   end
 
   defp pad16(binary) do
-    bin_len = byte_size(binary)
-    {bin_len, <<0::size(8 * (16 - rem(bin_len, 16)))>>}
+    length = byte_size(binary)
+    # Aligned inputs, including empty binaries, need no padding.
+    padding_bytes = rem(16 - rem(length, 16), 16)
+    {length, :binary.copy(<<0>>, padding_bytes)}
   end
 
   describe "poly1305 tag verification with :crypto" do
+    test "tags match :crypto for empty, partial, and aligned inputs" do
+      key = :binary.copy(<<1>>, 32)
+      nonce = :binary.copy(<<2>>, 16)
+      poly_key = CTR.crypt(<<0::256>>, key, nonce)
+
+      for plaintext_size <- [0, 1, 15, 16, 17, 32], aad_size <- [0, 1, 15, 16, 17, 32] do
+        plaintext = :binary.copy(<<3>>, plaintext_size)
+        aad = :binary.copy(<<4>>, aad_size)
+        {ciphertext, tag} = AEAD.encrypt(plaintext, key, nonce, aad)
+        {aad_len, aad_pad} = pad16(aad)
+        {ct_len, ct_pad} = pad16(ciphertext)
+
+        mac_data =
+          aad <> aad_pad <> ciphertext <> ct_pad <> <<aad_len::little-64, ct_len::little-64>>
+
+        expected_tag = :crypto.mac(:poly1305, poly_key, mac_data)
+        assert tag == expected_tag
+        assert {:ok, ^plaintext} = AEAD.decrypt(ciphertext, expected_tag, key, nonce, aad)
+      end
+    end
+
+    test "preserves key-dependent encryption and authentication across variants and schedulers" do
+      variants = [
+        {:speck32_64, 8, 4},
+        {:speck64_96, 12, 8},
+        {:speck64_128, 16, 8},
+        {:speck128_128, 16, 16},
+        {:speck128_192, 24, 16},
+        {:speck128_256, 32, 16}
+      ]
+
+      for {variant, key_size, nonce_size} <- variants, message_size <- [37, 16_385] do
+        key = :binary.copy(<<1>>, key_size)
+        other_key = :binary.copy(<<2>>, key_size)
+        nonce = :binary.copy(<<3>>, nonce_size)
+        plaintext = :binary.copy(<<4>>, message_size)
+        aad = "metadata"
+
+        {ciphertext, tag} = AEAD.encrypt(plaintext, key, nonce, aad, variant)
+        {other_ciphertext, _other_tag} = AEAD.encrypt(plaintext, other_key, nonce, aad, variant)
+
+        <<poly_key::binary-32, expected_ciphertext::binary>> =
+          CTR.crypt(<<0::256>> <> plaintext, key, nonce, variant)
+
+        {aad_len, aad_pad} = pad16(aad)
+        {ct_len, ct_pad} = pad16(ciphertext)
+
+        mac_data =
+          aad <> aad_pad <> ciphertext <> ct_pad <> <<aad_len::little-64, ct_len::little-64>>
+
+        expected_tag = :crypto.mac(:poly1305, poly_key, mac_data)
+        zero_key_tag = :crypto.mac(:poly1305, <<0::256>>, mac_data)
+
+        assert ciphertext == expected_ciphertext
+        assert ciphertext != other_ciphertext
+        assert tag == expected_tag
+
+        assert {:ok, ^plaintext} =
+                 AEAD.decrypt(ciphertext, expected_tag, key, nonce, aad, variant)
+
+        assert {:error, :authentication_failed} =
+                 AEAD.decrypt(ciphertext, tag, other_key, nonce, aad, variant)
+
+        assert {:error, :authentication_failed} =
+                 AEAD.decrypt(ciphertext, zero_key_tag, key, nonce, aad, variant)
+
+        assert {ciphertext, tag} == AEAD.encrypt(plaintext, key, nonce, aad, variant)
+        assert key == :binary.copy(<<1>>, key_size)
+        assert other_key == :binary.copy(<<2>>, key_size)
+      end
+    end
+
     test "tag matches :crypto.poly1305 for default variant" do
       key = :crypto.strong_rand_bytes(32)
       nonce = :crypto.strong_rand_bytes(16)
